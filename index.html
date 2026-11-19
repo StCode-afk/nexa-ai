@@ -3,24 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой Веб-ИИ</title>
+    <meta name="description" content="Nexa-AI — самообучающийся искусственный интеллект с генерацией текста, поиском знаний и голосом.">
+    <title>Nexa-AI — Саморазвивающийся ИИ</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
+            background-color: #0d1117;
+            color: #e6edf3;
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
         header {
-            background-color: #1f1f1f;
-            padding: 15px;
-            text-align: center;
+            background-color: #161b22;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+        }
+        .title-block {
+            display: flex;
+            flex-direction: column;
+        }
+        .title-main {
             font-weight: bold;
             font-size: 18px;
-            border-bottom: 1px solid #333;
+            color: #58a6ff;
+        }
+        #stats {
+            font-size: 11px;
+            color: #3fb950;
+            margin-top: 2px;
+        }
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+        .icon-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .icon-btn.active {
+            background: #1f6feb;
+            color: white;
+            border-color: #388bfd;
         }
         #chat-box {
             flex: 1;
@@ -28,91 +61,196 @@
             padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
         .msg {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 16px;
-            line-height: 1.4;
+            max-width: 84%;
+            padding: 11px 15px;
+            border-radius: 18px;
+            line-height: 1.45;
             font-size: 15px;
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
         .user {
-            background-color: #2b5278;
+            background-color: #1f6feb;
+            color: #ffffff;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
         .bot {
-            background-color: #262626;
+            background-color: #161b22;
+            border: 1px solid #30363d;
             align-self: flex-start;
             border-bottom-left-radius: 4px;
         }
         #input-area {
             display: flex;
             padding: 10px;
-            background-color: #1f1f1f;
-            border-top: 1px solid #333;
+            background-color: #161b22;
+            border-top: 1px solid #30363d;
         }
         input {
             flex: 1;
-            padding: 12px;
-            border-radius: 20px;
-            border: none;
-            background-color: #2c2c2c;
+            padding: 12px 15px;
+            border-radius: 22px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
             color: white;
             font-size: 16px;
             outline: none;
         }
-        button {
+        input:focus {
+            border-color: #58a6ff;
+        }
+        #send-btn {
             margin-left: 10px;
             padding: 0 20px;
-            border-radius: 20px;
+            border-radius: 22px;
             border: none;
-            background-color: #3a82f6;
+            background-color: #238636;
             color: white;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 17px;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<header>🤖 Мой Веб-ИИ (Нейросеть + Википедия)</header>
+<header>
+    <div class="title-block">
+        <div class="title-main">⚡ Nexa-AI v2.0</div>
+        <div id="stats">Память: 0 фактов | Словарь ИИ: 0 слов</div>
+    </div>
+    <div class="controls">
+        <button id="voice-btn" class="icon-btn" title="Озвучка голосом">🔇</button>
+        <button id="clear-btn" class="icon-btn" title="Сбросить память">🗑️</button>
+    </div>
+</header>
 
 <div id="chat-box">
-    <div class="msg bot">Привет! Я работаю прямо в твоем браузере. Могу просто поболтать или найти ответ на любой вопрос в интернете!</div>
+    <div class="msg bot">Привет! Я обновленный **Nexa-AI v2.0**.
+
+Теперь я умею:
+• 🌐 Искать информацию в сети и запоминать её навсегда
+• 🧬 Генерировать собственные мысли из изученного (напиши: «придумай: тема»)
+• 🧮 Решать математику (напиши: «посчитай 25 * 14 + 80»)
+• 🎓 Учиться у тебя («запомни: факт» или «учись: вопрос = ответ»)</div>
 </div>
 
 <div id="input-area">
-    <input type="text" id="user-input" placeholder="Напишите сообщение...">
+    <input type="text" id="user-input" placeholder="Напиши запрос или команду...">
     <button id="send-btn" type="button">➤</button>
 </div>
 
 <script>
-    const intents = [
+    // --- ДОЛГОВРЕМЕННАЯ ПАМЯТЬ ---
+    let learnedFacts = JSON.parse(localStorage.getItem("nexa_facts_v2") || "[]");
+    let customPhrases = JSON.parse(localStorage.getItem("nexa_phrases_v2") || "{}");
+    let markovChain = JSON.parse(localStorage.getItem("nexa_markov_v2") || "{}");
+    let voiceEnabled = false;
+
+    const baseIntents = [
         {
             keywords: ["привет", "здравствуй", "здарова", "ку", "хай"],
-            replies: ["Привет! Рад видеть тебя в браузере!", "Здарова! О чём пообщаемся?", "Привет! Задавай любой вопрос."]
+            replies: ["Привет! Мои нейроны обновлены и готовы к работе.", "Здарова! Что изучим или сгенерируем сегодня?"]
         },
         {
             keywords: ["дела", "жизнь", "настроение", "поживаешь"],
-            replies: ["Отлично! В браузере работать одно удовольствие.", "Всё супер, интернет подключен, готов искать информацию!"]
+            replies: ["Супер! Моя языковая модель уже содержит " + Object.keys(markovChain).length + " уникальных слов.", "Отлично! Готов искать факты, считать и учиться."]
         },
         {
-            keywords: ["кто", "ты", "создал", "зовут", "имя"],
-            replies: ["Я твой собственный веб-ИИ, написанный на HTML и JavaScript!", "Меня создал ты прямо на своём телефоне."]
-        },
-        {
-            keywords: ["тему", "поговорим", "скучно", "обсудим"],
-            replies: ["Давай обсудим космос! Спроси меня про Марс, чёрные дыры или Илона Маска.", "Можем поговорить про технологии или историю. Напиши любое слово, и я найду о нём факты!"]
+            keywords: ["кто", "ты", "создал", "зовут", "имя", "умеешь"],
+            replies: ["Я Nexa-AI v2.0 — саморазвивающийся ИИ с генератором текста на Цепях Маркова, созданный StCode-afk!"]
         },
         {
             keywords: ["пока", "свидания", "удачи"],
-            replies: ["До связи! Вкладка всегда открыта для тебя.", "Пока! Заходи ещё."]
+            replies: ["До связи! Все новые связи слов сохранены в моей памяти."]
         }
     ];
+
+    function updateStats() {
+        const wordsCount = Object.keys(markovChain).length;
+        document.getElementById("stats").textContent = `Фактов: ${learnedFacts.length} | Словарь генератора: ${wordsCount} слов`;
+    }
+
+    function saveMemory() {
+        localStorage.setItem("nexa_facts_v2", JSON.stringify(learnedFacts));
+        localStorage.setItem("nexa_phrases_v2", JSON.stringify(customPhrases));
+        localStorage.setItem("nexa_markov_v2", JSON.stringify(markovChain));
+        updateStats();
+    }
+
+    // --- ОБУЧЕНИЕ ГЕНЕРАТОРА ТЕКСТА (ЦЕПЬ МАРКОВА) ---
+    function trainMarkov(text) {
+        const clean = text.replace(/[^а-яА-ЯёЁa-zA-Z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
+        const words = clean.split(" ");
+        if (words.length < 2) return;
+
+        for (let i = 0; i < words.length - 1; i++) {
+            const current = words.at(i).toLowerCase();
+            const next = words.at(i + 1);
+            if (!markovChain[current]) {
+                markovChain[current] = [];
+            }
+            if (markovChain[current].length < 25) {
+                markovChain[current].push(next);
+            }
+        }
+    }
+
+    // Генерация нового текста на основе выученных связей слов
+    function generateThought(seedWord) {
+        const keys = Object.keys(markovChain);
+        if (keys.length < 10) {
+            return "Мой словарный запас пока слишком мал для генерации мыслей. Задай мне пару вопросов (например, про космос или физику), чтобы я прочитал статьи и научился говорить!";
+        }
+
+        let current = seedWord ? seedWord.toLowerCase().trim() : "";
+        if (!markovChain[current]) {
+            // Ищем похожее слово в словаре
+            const found = keys.find(k => k.startsWith(current.slice(0, 4)));
+            current = found || keys.at(Math.floor(Math.random() * keys.length));
+        }
+
+        let result = [current.charAt(0).toUpperCase() + current.slice(1)];
+        for (let i = 0; i < 18; i++) {
+            const nextWords = markovChain[current];
+            if (!nextWords || nextWords.length === 0) break;
+            const nextWord = nextWords.at(Math.floor(Math.random() * nextWords.length));
+            result.push(nextWord);
+            current = nextWord.toLowerCase();
+        }
+        return "🧬 (Сгенерированная мысль): " + result.join(" ") + ".";
+    }
+
+    // --- МАТЕМАТИЧЕСКИЙ МОДУЛЬ ---
+    function trySolveMath(text) {
+        const mathMatch = text.match(/([0-9+\-*/().\s]{3,})/);
+        if (mathMatch) {
+            const expr = mathMatch.at(0).trim();
+            if (/[+\-*/]/.test(expr) && /[0-9]/.test(expr)) {
+                try {
+                    const ans = Function('"use strict";return (' + expr + ')')();
+                    if (typeof ans === "number" && !isNaN(ans)) {
+                        return `🧮 Результат вычисления (${expr}): **${ans}**`;
+                    }
+                } catch (e) {}
+            }
+        }
+        return null;
+    }
+
+    function speakText(text) {
+        if (!voiceEnabled || !("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const cleanSpeech = text.replace(/[🌐🧠💾🧬🧮⚡✅🎓]/g, "");
+        const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+        utterance.lang = "ru-RU";
+        utterance.rate = 1.05;
+        window.speechSynthesis.speak(utterance);
+    }
 
     function addMessage(text, sender) {
         const chatBox = document.getElementById("chat-box");
@@ -121,75 +259,174 @@
         div.textContent = text;
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
+        if (sender === "bot") speakText(text);
         return div;
     }
 
-    function getChatReply(text) {
-        const clean = text.toLowerCase().replace(/[?!.,]/g, "");
-        const words = clean.split(/\s+/);
-        for (let intent of intents) {
-            for (let word of words) {
-                if (intent.keywords.includes(word)) {
-                    const r = intent.replies;
-                    return r.at(Math.floor(Math.random() * r.length));
-                }
+    function searchLocalMemory(query) {
+        const cleanQuery = query.toLowerCase().replace(/[?!.,]/g, "").trim();
+        for (let key in customPhrases) {
+            if (cleanQuery === key || (cleanQuery.length > 4 && cleanQuery.includes(key))) {
+                return "🧠 (Из выученного): " + customPhrases[key];
             }
         }
-        return null;
-    }
+        const words = cleanQuery.split(/\s+/).filter(w => w.length >= 4);
+        if (words.length === 0) return null;
 
-    async function searchInternet(query) {
-        const stopWords = ["что", "кто", "такое", "такой", "где", "когда", "как", "почему", "зачем", "расскажи", "про", "об", "о", "это", "да"];
-        const cleanWords = query.toLowerCase().replace(/[?!.,]/g, "").split(/\s+/).filter(w => !stopWords.includes(w));
-        const searchTerm = cleanWords.join(" ") || query;
-
-        try {
-            const apiUrl = `https://wikipedia.org{encodeURIComponent(searchTerm)}&gsrlimit=1&prop=extracts&exintro=1&explaintext=1&format=json&origin=*`;
-            const res = await fetch(apiUrl);
-            const data = await res.json();
-
-            if (!data.query || !data.query.pages) {
-                return "Не нашёл в Википедии ничего по запросу «" + searchTerm + "». Попробуй написать 1-2 конкретных слова (например: «Марс» или «Фотосинтез»).";
+        let bestFact = null;
+        let maxMatches = 0;
+        for (let fact of learnedFacts) {
+            const lowerFact = fact.toLowerCase();
+            let matches = 0;
+            for (let w of words) {
+                if (lowerFact.includes(w.slice(0, 5))) matches++;
             }
-
-            const pages = Object.values(data.query.pages);
-            const page = pages.at(0);
-
-            if (page && page.extract) {
-                let text = page.extract.split("\n").at(0);
-                return `🌐 Из Википедии (${page.title}):\n${text}`;
-            } else {
-                return "Статья найдена, но описание пустое.";
-            }
-        } catch (e) {
-            return "Браузер заблокировал запрос из-за адреса content://. Открой файл через адрес file:///storage/emulated/0/Download/CodingC++/index.html";
-        }
+    if (matches > maxMatches) {
+maxMatches = matches;
+bestFact = fact;
+}
+}
+if (maxMatches >= 1 && bestFact) {
+return "💾 (Из памяти): " + bestFact;
+}
+return null;
+}
+function getChatReply(text) {
+const clean = text.toLowerCase().replace(/[?!.,]/g, "");
+const words = clean.split(/\s+/);
+for (let intent of baseIntents) {
+for (let word of words) {
+if (intent.keywords.includes(word)) {
+const r = intent.replies;
+return r.at(Math.floor(Math.random() * r.length));
+}
+}
+}
+return null;
     }
-
+async function searchInternet(query) {
+const stopWords = ["что", "кто", "такое", "такой", "где", "когда", "как", "почему", "зачем", "расскажи", "про", "об", "о", "это", "да"];
+const cleanWords = query.toLowerCase().replace(/[?!.,]/g, "").split(/\s+/).filter(w => !stopWords.includes(w));
+const searchTerm = cleanWords.join(" ") || query;
+try {
+const apiUrl = https://wikipedia.org{encodeURIComponent(searchTerm)}&gsrlimit=1&prop=extracts&exintro=1&explaintext=1&format=json&origin=*;
+const res = await fetch(apiUrl);
+const data = await res.json();
+if (!data.query || !data.query.pages) {
+return "Не нашёл в сети ответа на «" + searchTerm + "». Можешь обучить меня командой:\nучись: " + searchTerm + " = твой ответ";
+}
+const pages = Object.values(data.query.pages);
+const page = pages.at(0);
+if (page && page.extract) {
+let text = page.extract.split("\n").at(0);
+const newKnowledge = ${page.title}: ${text};
+if (!learnedFacts.includes(newKnowledge)) {
+learnedFacts.push(newKnowledge);
+}
+// Обучаем генератор текста на прочитанной статье!
+trainMarkov(text);
+saveMemory();
+return 🌐 Нашёл и изучил (${page.title}):\n${text};
+} else {
+return "Статья найдена, но описание пустое.";
+}
+} catch (e) {
+return "Ошибка сети. Проверь подключение к интернету.";
+}
+    }
     async function sendMessage() {
-        const input = document.getElementById("user-input");
-        const text = input.value.trim();
-        if (!text) return;
-
-        addMessage(text, "user");
-        input.value = "";
-
-        const chatReply = getChatReply(text);
-        if (chatReply) {
-            setTimeout(() => addMessage(chatReply, "bot"), 300);
-            return;
-        }
-
-        const loadingMsg = addMessage("🔍 Ищу ответ в интернете...", "bot");
-        const answer = await searchInternet(text);
-        loadingMsg.textContent = answer;
-    }
-
-    document.getElementById("send-btn").addEventListener("click", sendMessage);
-    document.getElementById("user-input").addEventListener("keypress", function(e) {
-        if (e.key === "Enter") sendMessage();
-    });
-</script>
-
-</body>
-</html>
+const input = document.getElementById("user-input");
+const text = input.value.trim();
+if (!text) return;
+addMessage(text, "user");
+input.value = "";
+// Обучаем генератор на речи самого пользователя
+trainMarkov(text);
+saveMemory();
+const lower = text.toLowerCase();
+// Команда генерации мысли ("придумай: слово")
+if (lower.startsWith("придумай")) {
+const seed = text.replace(/придумай:?/i, "").trim().split(" ").at(0);
+setTimeout(() => addMessage(generateThought(seed), "bot"), 250);
+return;
+}
+// Команда запоминания факта
+if (lower.startsWith("запомни:")) {
+const fact = text.slice(8).trim();
+if (fact) {
+learnedFacts.push(fact);
+trainMarkov(fact);
+saveMemory();
+setTimeout(() => addMessage("✅ Записал в память и обучил языковой генератор!", "bot"), 200);
+}
+return;
+}
+// Команда обучения диалогу
+if (lower.startsWith("учись:")) {
+const pair = text.slice(6).split("=");
+if (pair.length === 2) {
+const q = pair.at(0).toLowerCase().replace(/[?!.,]/g, "").trim();
+const a = pair.at(1).trim();
+if (q && a) {
+customPhrases[q] = a;
+trainMarkov(a);
+saveMemory();
+setTimeout(() => addMessage(🎓 Выучил! На «${q}» отвечу: «${a}»., "bot"), 200);
+return;
+}
+}
+setTimeout(() => addMessage("Формат: учись: вопрос = ответ", "bot"), 200);
+return;
+}
+// Проверка математики
+const mathAns = trySolveMath(text);
+if (mathAns) {
+setTimeout(() => addMessage(mathAns, "bot"), 200);
+return;
+}
+        // Проверка математики
+const mathAns = trySolveMath(text);
+if (mathAns) {
+setTimeout(() => addMessage(mathAns, "bot"), 200);
+return;
+}
+// Проверка выученной памяти
+const memoryReply = searchLocalMemory(text);
+if (memoryReply) {
+setTimeout(() => addMessage(memoryReply, "bot"), 250);
+return;
+}
+// Проверка приветствий
+const chatReply = getChatReply(text);
+if (chatReply) {
+setTimeout(() => addMessage(chatReply, "bot"), 250);
+return;
+}
+// Поиск в интернете + самообучение
+const loadingMsg = addMessage("🔍 Изучаю интернет и тренирую словарь...", "bot");
+const answer = await searchInternet(text);
+loadingMsg.textContent = answer;
+speakText(answer);
+}
+document.getElementById("send-btn").addEventListener("click", sendMessage);
+document.getElementById("user-input").addEventListener("keypress", function(e) {
+if (e.key === "Enter") sendMessage();
+});
+document.getElementById("voice-btn").addEventListener("click", function() {
+voiceEnabled = !voiceEnabled;
+this.textContent = voiceEnabled ? "🔊" : "🔇";
+this.classList.toggle("active", voiceEnabled);
+});
+document.getElementById("clear-btn").addEventListener("click", function() {
+if (confirm("Очистить всю накопленную память Nexa-AI?")) {
+localStorage.removeItem("nexa_facts_v2");
+localStorage.removeItem("nexa_phrases_v2");
+localStorage.removeItem("nexa_markov_v2");
+learnedFacts = [];
+customPhrases = {};
+markovChain = {};
+updateStats();
+addMessage("🗑️ Память очищена. Я готов учиться заново!", "bot");
+}
+});
+updateStats();
